@@ -49,20 +49,20 @@ def resolve_asset_paths(data: dict, photos_dir: str = None) -> dict:
                 resolved[key] = str(candidate)
     
     # ── Resolve photo paths ─────────────────────────────────────────────
-    if photos_dir:
-        # User specified a photos directory — grab all jpg/png from it
-        photos_path = Path(photos_dir)
-        if photos_path.exists():
-            photo_files = sorted(
-                glob.glob(str(photos_path / "*.jpg")) +
-                glob.glob(str(photos_path / "*.jpeg")) +
-                glob.glob(str(photos_path / "*.png"))
-            )
-            if photo_files:
-                resolved["photos"] = photo_files[:6]  # Max 6 photos
-                print(f"📷 Found {len(photo_files)} photos in {photos_dir}")
+    photos_path = Path(photos_dir) if photos_dir else PROJECT_ROOT / "photos"
+    if photos_path.exists():
+        photo_files = (
+            glob.glob(str(photos_path / "*.jpg")) +
+            glob.glob(str(photos_path / "*.jpeg")) +
+            glob.glob(str(photos_path / "*.png"))
+        )
+        # Sort by modification time, newest first
+        photo_files.sort(key=lambda f: os.path.getmtime(f), reverse=True)
+        if photo_files:
+            resolved["photos"] = photo_files[:2]  # 2 most recent
+            print(f"📷 Using {min(2, len(photo_files))} most recent photos from {photos_path}")
     else:
-        # Try to resolve existing photo paths
+        # Fallback: resolve paths from data against sample directory
         photos = resolved.get("photos", [])
         resolved_photos = []
         sample_dir = PROJECT_ROOT / "assets" / "photos" / "sample"
@@ -72,7 +72,7 @@ def resolve_asset_paths(data: dict, photos_dir: str = None) -> dict:
             elif (sample_dir / os.path.basename(p)).exists():
                 resolved_photos.append(str(sample_dir / os.path.basename(p)))
             else:
-                resolved_photos.append(p)  # Keep as-is, will show placeholder
+                resolved_photos.append(p)
         resolved["photos"] = resolved_photos
     
     return resolved
