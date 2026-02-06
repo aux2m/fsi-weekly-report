@@ -1,0 +1,19 @@
+# Generated reports
+*.pdf
+!examples/sample_output.pdf
+!templates/*.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,86 @@
+{
+    "report_number": "03",
+    "report_week": "02/03—02/07",
+    "issued_date": "Friday, February 7, 2025",
+    
+    "project_name": "Bennett-Kew P-8 Academy",
+    "project_subtitle": "New Classroom Building Project",
+    "project_address": "11710 S Cherry Ave, Inglewood, CA 90303",
+    "architect": "HED Design",
+    "project_duration": "September 2025 - September 2026",
+    "prepared_by": "Adam Wentworth, PM",
+    "general_contractor": "PCN3, Inc.",
+    "construction_manager": "Fonder-Salari, Inc.",
+    "district": "Inglewood Unified School District",
+    
+    "project_description": "The project generally consists of the construction of: a single story building consisting of 6 classrooms, restrooms, utility spaces and a large multipurpose space. Site work includes new asphalt play field, courts, solar installation, fire lane striping and modifications to fencing. Play structures and soft surface materials are owner furnished, contractor coordinated and installed along with minor landscaping. Project is on an active school site, all work will be coordinated with the District to cause the least disruption to class, particularly for special education programming.",
+    
+    "countdown_days": "347",
+    
+    "phase": "Foundations & Underground",
+    "overall_progress": "8",
+    "schedule_status": "On Schedule",
+    "activities_completed": [
+        "Completed footing excavation Grid Lines 1-10",
+        "Poured continuous footings at Grid A & B",
+        "Underground plumbing rough-in for restrooms",
+        "Installed erosion control measures per SWPPP",
+        "Electrical conduit placement in slab area"
+    ],
+    "milestones_achieved": [
+        "Foundation inspection passed (DSA)",
+        "Underground plumbing inspection cleared"
+    ],
+    "critical_items": [
+        "Awaiting RFI #012 response from HED Design re: footing depth at Grid 7"
+    ],
+    
+    "week1_dates": "02/10—02/14",
+    "week1_level": "MODERATE",
+    "week1_activities": ["Stem wall forming", "Concrete pours", "Rebar installation"],
+    "week2_dates": "02/17—02/21",
+    "week2_level": "MODERATE",
+    "week2_activities": ["SOG prep work", "Underground MEP", "Form stripping"],
+    "week3_dates": "02/24—02/28",
+    "week3_level": "HIGH",
+    "week3_activities": ["SOG concrete pour", "Pump truck on site", "Increased traffic"],
+    
+    "planned_activities": [
+        "Form and pour stem walls Grid Lines 1-5",
+        "Continue underground electrical conduit",
+        "Install anchor bolts per structural plans",
+        "Begin SOG gravel base preparation",
+        "Erosion control maintenance"
+    ],
+    "noise_index": "Moderate",
+    "noise_level": "3/5",
+    "special_considerations": [
+        "Concrete pump truck Tuesday AM - temporary parking impact",
+        "Coordinate with after-school program for safe walkway access"
+    ],
+    
+    "photo_captions": [
+        "Marking new classroom building foundation",
+        "Erosion control protecting site during rain",
+        "SOG concrete pour Grid 11-15",
+        "Post-pour sawcut & curing operations"
+    ],
+    
+    "commitment_text": "Our construction team completed this week's activities with zero educational disruptions while maintaining the highest safety standards. Moving into higher-impact phases, we remain committed to advance communication, flexible scheduling around special programs, and immediate response to any campus concerns.",
+    "contact_name": "Adam Wentworth, Construction Manager",
+    "contact_phone": "(661) 204-1154",
+    "contact_email": "adam.wentworth@fonder-salari.com",
+    
+    "_comment_logos": "Place logo files in same directory as generate_report.py",
+    "logo_fs": "fs_logo.png",
+    "logo_bk": "bk_logo.jpg",
+    "logo_iusd": "iusd_logo.jpg",
+    
+    "_comment_photos": "Place up to 6 construction photos in same directory",
+    "photos": [
+        "photo1.jpg",
+        "photo2.jpg",
+        "photo3.jpg",
+        "photo4.jpg"
+    ]
+}
