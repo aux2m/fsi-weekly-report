@@ -176,9 +176,11 @@ def generate_report(data, output_path="Weekly_Progress_Report.pdf"):
     c.setFont("Helvetica-Bold", 8); c.setFillColor(DARK_GREEN)
     c.drawCentredString(PAGE_W/2, y + header_h - 52, f"Project Address: {data['project_address']}")
 
-    logo_rx = PAGE_W - MARGIN_R - 105
-    safe_image(c, data.get('logo_bk', ''), logo_rx, y + header_h/2, 48, header_h/2)
-    safe_image(c, data.get('logo_iusd', ''), logo_rx + 52, y, 53, header_h)
+    logo_sz = 55; logo_gap = 8  # same size, balanced gap
+    logo_rx = PAGE_W - MARGIN_R - (logo_sz * 2 + logo_gap)
+    logo_ry = y + (header_h - logo_sz) / 2  # vertically centered
+    safe_image(c, data.get('logo_bk', ''), logo_rx, logo_ry, logo_sz, logo_sz)
+    safe_image(c, data.get('logo_iusd', ''), logo_rx + logo_sz + logo_gap, logo_ry, logo_sz, logo_sz)
 
     # ── NAVY BANNER (no curly braces per r1) ─────────────────────────────
     y -= 2
@@ -191,7 +193,6 @@ def generate_report(data, output_path="Weekly_Progress_Report.pdf"):
     y -= bh
 
     # ── ARCHITECT INFO + DESCRIPTION ────────────────────────────────────
-    y -= 2
     info_h = 82; info_lw = 130
     lx = MARGIN_L + 4; ly = y - 12
     for label, val, bold_val in [
@@ -204,31 +205,51 @@ def generate_report(data, output_path="Weekly_Progress_Report.pdf"):
         c.setFont("Helvetica-BoldOblique", 8); c.setFillColor(DARK_GREEN)
         c.drawString(lx, ly, val); ly -= 12
 
-    desc_x = MARGIN_L + info_lw + 5
-    desc_w = CONTENT_W - info_lw - 10
+    desc_x = MARGIN_L + info_lw + 15
+    desc_w = MARGIN_L + CONTENT_W - desc_x  # right edge flush with content
     c.setFont("Helvetica-Bold", 13); c.setFillColor(DARK_GREEN)
     c.drawCentredString(desc_x + desc_w/2, y - 14, "PROJECT DESCRIPTION")
     c.setStrokeColor(MED_GRAY); c.setLineWidth(0.5)
     c.rect(desc_x, y - info_h, desc_w, info_h - 18, stroke=1, fill=0)
     dy = y - 28
     c.setFont("Helvetica", 6.5); c.setFillColor(BLACK)
-    for line in wrap(data['project_description'], width=int((desc_w-8)/(6.5*0.47))):
-        c.drawString(desc_x + 4, dy, line); dy -= 8.5
+    text_w = desc_w - 8  # usable width inside box
+    desc_lines = wrap(data['project_description'], width=int(text_w / (6.5 * 0.47)))
+    for idx, line in enumerate(desc_lines):
+        if idx < len(desc_lines) - 1:  # justify all lines except last
+            words = line.split()
+            if len(words) > 1:
+                total_word_w = sum(c.stringWidth(w, "Helvetica", 6.5) for w in words)
+                space = (text_w - total_word_w) / (len(words) - 1)
+                wx = desc_x + 4
+                for w in words:
+                    c.drawString(wx, dy, w)
+                    wx += c.stringWidth(w, "Helvetica", 6.5) + space
+            else:
+                c.drawString(desc_x + 4, dy, line)
+        else:
+            c.drawString(desc_x + 4, dy, line)
+        dy -= 8.5
     y -= info_h
 
     # ── PROJECT REPORT DETAILS / COUNTDOWN BANNERS ──────────────────────
-    # Align split with activities/impact divider at 55%
-    left_col = CONTENT_W * 0.55; right_col = CONTENT_W - left_col
-    right_x = MARGIN_L + left_col + 2; impact_w = right_col - 2
+    # Right column = photo width; left column fills the rest
+    photo_w = 2.6 * 72   # 187.2 pts
+    photo_h = 1.7 * 72   # 122.4 pts
+    col_gap = 2
+    impact_w = photo_w
+    right_x = MARGIN_L + CONTENT_W - impact_w
+    left_col = CONTENT_W - impact_w - col_gap
     bh2 = 18
     c.setFillColor(GREEN_BANNER)
     c.rect(MARGIN_L, y - bh2, left_col, bh2, fill=1, stroke=0)
     c.setFont("Helvetica-BoldOblique", 11); c.setFillColor(WHITE)
     c.drawCentredString(MARGIN_L + left_col/2, y - bh2 + 5, "PROJECT REPORT DETAILS")
-    c.setFillColor(WHITE)
-    c.rect(right_x, y - bh2, impact_w, bh2, fill=1, stroke=0)
+    rc_x = MARGIN_L + left_col; rc_w = CONTENT_W - left_col  # flush with left column
+    c.setFillColor(WHITE); c.setStrokeColor(MED_GRAY); c.setLineWidth(0.5)
+    c.rect(rc_x, y - bh2, rc_w, bh2, fill=1, stroke=1)
     c.setFont("Helvetica-Bold", 9); c.setFillColor(GREEN_BANNER)
-    c.drawCentredString(right_x + impact_w/2, y - bh2 + 5, "Substantial Completion Countdown")
+    c.drawCentredString(rc_x + rc_w/2, y - bh2 + 5, "Substantial Completion Countdown")
     y -= bh2
 
     # ── DETAILS BOX (r1: 2-column layout) ───────────────────────────────
@@ -251,21 +272,22 @@ def generate_report(data, output_path="Weekly_Progress_Report.pdf"):
     rx = MARGIN_L + half; dy = y - 12
     c.setFont("Helvetica-Bold", 7.5); c.setFillColor(BLACK)
     c.drawString(rx, dy, "General Contractor: "); c.setFont("Helvetica", 7.5)
-    c.drawString(rx + 85, dy, data['general_contractor'])
+    c.drawString(rx + 95, dy, data['general_contractor'])
     dy -= 12
     c.setFont("Helvetica-Bold", 7.5); c.setFillColor(BLACK)
     c.drawString(rx, dy, "Construction Manager: ")
     c.setFont("Helvetica", 7.5); c.setFillColor(BLACK)
     c.drawString(rx + 95, dy, data['construction_manager'])
 
-    # Countdown box
-    cx = right_x
-    c.setFillColor(LIGHT_GRAY)
-    c.rect(cx, y - dh, impact_w, dh, fill=1, stroke=1)
-    c.setFont("Helvetica-Bold", 26); c.setFillColor(RED_BANNER)
-    c.drawCentredString(cx + impact_w/2 - 30, y - dh + 6, data['countdown_days'])
-    c.setFont("Helvetica-Bold", 11); c.setFillColor(DARK_BLUE)
-    c.drawString(cx + impact_w/2, y - dh + 10, "Calendar Days")
+    # Countdown box (expanded to touch left column)
+    cx = MARGIN_L + left_col
+    cd_w = CONTENT_W - left_col
+    c.setFillColor(LIGHT_GRAY); c.setStrokeColor(MED_GRAY); c.setLineWidth(0.5)
+    c.rect(cx, y - dh, cd_w, dh, fill=1, stroke=1)
+    c.setFont("Helvetica-Bold", 23); c.setFillColor(RED_BANNER)
+    c.drawCentredString(cx + cd_w/2 - 25, y - dh + 5, data['countdown_days'])
+    c.setFont("Helvetica-Bold", 10); c.setFillColor(DARK_BLUE)
+    c.drawString(cx + cd_w/2 - 2, y - dh + 9, "Calendar Days")
     y -= dh
 
     # ── ACTIVITIES + IMPACT BANNERS ─────────────────────────────────────
@@ -275,14 +297,20 @@ def generate_report(data, output_path="Weekly_Progress_Report.pdf"):
     c.rect(MARGIN_L, y - abh, left_col, abh, fill=1, stroke=0)
     c.setFont("Helvetica-BoldOblique", 11); c.setFillColor(WHITE)
     c.drawCentredString(MARGIN_L + left_col/2, y - abh + 5, "THIS WEEK'S COMPLETED ACTIVITIES")
-    c.setFillColor(WHITE)
-    c.rect(right_x, y - abh, impact_w, abh, fill=1, stroke=0)
+    c.setFillColor(WHITE); c.setStrokeColor(MED_GRAY); c.setLineWidth(0.5)
+    c.rect(rc_x, y - abh, rc_w, abh, fill=1, stroke=1)
     c.setFont("Helvetica-Bold", 9); c.setFillColor(GREEN_BANNER)
-    c.drawCentredString(right_x + impact_w/2, y - abh + 5, "3-WEEK CONSTRUCTION IMPACT")
+    c.drawCentredString(rc_x + rc_w/2, y - abh + 5, "3-WEEK CONSTRUCTION IMPACT")
     y -= abh
 
     # ── MAIN CONTENT ────────────────────────────────────────────────────
-    main_h = 310
+    # Precompute layout: NW banner top at 4.25" from page bottom = 306 pts
+    main_h = 230
+    nbh = 18; nh = 132; cbh = 22; ch = 86  # commitment 22+86 = 108 = 1.5"
+    y_nw = y - main_h                  # NW banner top (306 from bottom)
+    y_nw_content = y_nw - nbh          # NW content top (288)
+    y_commit = y_nw_content - nh       # commitment banner top = photo 2 bottom
+
     c.setStrokeColor(MED_GRAY)
     c.rect(MARGIN_L, y - main_h, left_col, main_h, stroke=1, fill=0)
 
@@ -295,7 +323,7 @@ def generate_report(data, output_path="Weekly_Progress_Report.pdf"):
     c.drawString(lx + 78, ly, f"{data['overall_progress']}% Complete"); ly -= 10
     c.setFont("Helvetica-Bold", 7.5); c.setFillColor(BLACK)
     c.drawString(lx, ly, "Schedule Status: "); c.setFont("Helvetica", 7.5)
-    c.drawString(lx + 73, ly, data['schedule_status']); ly -= 12
+    c.drawString(lx + 78, ly, data['schedule_status']); ly -= 12
 
     c.setFont("Helvetica-Bold", 7.5); c.setFillColor(BLACK)
     c.drawString(lx, ly, "Activities Completed:"); ly -= 10
@@ -324,7 +352,7 @@ def generate_report(data, output_path="Weekly_Progress_Report.pdf"):
         c.drawCentredString(gx + col_w/2, gy - 19, f"({data[dk]})")
         level = data[lk]
         bc = {"LOW": HexColor('#4CAF50'), "MODERATE": HexColor('#FF9800'), "HIGH": HexColor('#E53935')}
-        bw = col_w - 8; bx = gx + 4; by = gy - 35
+        bw = col_w - 4; bx = gx + 2; by = gy - 35
         c.setFillColor(bc.get(level.upper(), HexColor('#FF9800')))
         c.roundRect(bx, by, bw, 14, 2, fill=1, stroke=0)
         c.setFont("Helvetica-Bold", 7); c.setFillColor(WHITE)
@@ -332,65 +360,68 @@ def generate_report(data, output_path="Weekly_Progress_Report.pdf"):
         ay = by - 10
         for act in data[ak][:3]:
             c.setFont("Helvetica", 5.5); c.setFillColor(DARK_GRAY)
-            c.drawCentredString(gx + col_w/2, ay, act[:22] + ("..." if len(act) > 22 else ""))
+            c.drawCentredString(gx + col_w/2, ay, act[:18] + ("..." if len(act) > 18 else ""))
             ay -= 8
 
-    # Photos in right column (below impact grid)
+    # Photos in right column — anchored to commitment banner top
     photos = data.get('photos', []); captions = data.get('photo_captions', [])
-    photo_w = 2.6 * 72  # 2.6 inches
-    photo_h = 1.7 * 72  # 1.7 inches
-    if len(photos) > 0:
-        photo_x = right_x + (impact_w - photo_w) / 2  # center in column
-        for i in range(min(2, len(photos))):
-            py = y - 62 - i * (photo_h + 2)
-            safe_image(c, photos[i], photo_x, py - photo_h, photo_w, photo_h)
-            if i < len(captions):
-                cap_y = py - photo_h + photo_h * 0.2  # lower third overlay
-                c.setFillColor(HexColor('#00000088'))
-                c.rect(photo_x, cap_y, photo_w, 12, fill=1, stroke=0)
-                c.setFont("Helvetica-Bold", 6); c.setFillColor(WHITE)
-                c.drawString(photo_x + 3, cap_y + 3, captions[i])
-    y -= main_h
+    cap_overlay_h = 18    # 1/4 inch caption banner
+    cap_from_bottom = 27  # 3/8 inch from photo bottom to caption top
 
-    # ── NEXT WEEK BANNER ────────────────────────────────────────────────
-    nbh = 18
+    if len(photos) > 0:
+        photo_x = right_x
+        p2_bottom = y_commit + 2               # 2pt gap above commitment banner
+        p1_bottom = p2_bottom + photo_h + 2   # 2pt gap between photos
+        positions = [p1_bottom, p2_bottom]
+        for i in range(min(2, len(photos))):
+            if os.path.exists(photos[i]):
+                try:
+                    c.drawImage(photos[i], photo_x, positions[i], impact_w, photo_h, mask='auto')
+                except Exception:
+                    pass
+            if i < len(captions):
+                cap_bot = positions[i] + cap_from_bottom - cap_overlay_h  # +9 from photo bottom
+                c.setFillColor(MED_GRAY)
+                c.rect(photo_x, cap_bot, impact_w, cap_overlay_h, fill=1, stroke=0)
+                c.setFont("Helvetica-Bold", 6.5); c.setFillColor(WHITE)
+                c.drawString(photo_x + 3, cap_bot + 6, captions[i])
+
+    # ── NEXT WEEK BANNER (left column only, at precomputed y_nw) ────────
+    y = y_nw  # jump to NW banner position
     c.setFillColor(GREEN_BANNER)
-    c.rect(MARGIN_L, y - nbh, CONTENT_W, nbh, fill=1, stroke=0)
-    c.setFont("Helvetica-BoldOblique", 12); c.setFillColor(WHITE)
-    c.drawCentredString(PAGE_W/2, y - nbh + 4, "NEXT WEEK ACTIVITY PROJECTION")
+    c.rect(MARGIN_L, y - nbh, left_col, nbh, fill=1, stroke=0)
+    c.setFont("Helvetica-BoldOblique", 11); c.setFillColor(WHITE)
+    c.drawCentredString(MARGIN_L + left_col/2, y - nbh + 4, "NEXT WEEK ACTIVITY PROJECTION")
     y -= nbh
 
     # ── NEXT WEEK CONTENT ───────────────────────────────────────────────
-    nh = 128
     c.setStrokeColor(MED_GRAY)
     c.rect(MARGIN_L, y - nh, left_col, nh, stroke=1, fill=0)
     lx = MARGIN_L + 6; ly = y - 12
     c.setFont("Helvetica-Bold", 8); c.setFillColor(BLACK)
     c.drawString(lx, ly, "PLANNED ACTIVITIES"); ly -= 11
     ly = draw_bullet_list(c, data['planned_activities'], lx, ly, left_col - 15, "Helvetica", 7, BLACK, 11)
-    ly -= 6
+    ly -= 4
     c.setFont("Helvetica-Bold", 7.5); c.setFillColor(BLACK)
-    c.drawString(lx, ly, "ANTICIPATED IMPACT LEVELS"); ly -= 12
+    c.drawString(lx, ly, "ANTICIPATED IMPACT LEVELS"); ly -= 10
     c.setFont("Helvetica-Bold", 7); c.setFillColor(BLACK)
     c.drawString(lx, ly, "NOISE INDEX: "); c.setFont("Helvetica", 7)
     c.drawString(lx + 68, ly, f"{data['noise_index']}  (Level {data['noise_level']})"); ly -= 10
     c.setFont("Helvetica", 6.5)
-    c.drawString(lx, ly, "Peak Impact Times: Mon-Fri 7:00 AM - 3:00 PM"); ly -= 14
+    c.drawString(lx, ly, "Peak Impact Times: Mon-Fri 7:00 AM - 3:00 PM"); ly -= 11
     c.setFont("Helvetica-Bold", 7.5); c.setFillColor(BLACK)
     c.drawString(lx, ly, "SPECIAL CONSIDERATIONS"); ly -= 10
     draw_bullet_list(c, data['special_considerations'], lx, ly, left_col - 15, "Helvetica", 6.5, BLACK, 9)
 
-    y -= nh
-
-    # ── COMMITMENT ──────────────────────────────────────────────────────
-    cbh = 22
+    # ── COMMITMENT (anchored to photo 2 bottom) ─────────────────────────
+    y = y_commit  # jump to commitment position
     c.setFillColor(NAVY)
     c.rect(MARGIN_L, y - cbh, CONTENT_W, cbh, fill=1, stroke=0)
     c.setFont("Helvetica-Bold", 14); c.setFillColor(WHITE)
     c.drawString(MARGIN_L + 10, y - cbh + 6, "COMMITMENT")
     y -= cbh
 
-    ch = 52
+    ch = 86  # 22+86 = 108 pts = 1.5 inches
     c.setStrokeColor(MED_GRAY)
     c.rect(MARGIN_L, y - ch, CONTENT_W, ch, stroke=1, fill=0)
     cx_t = MARGIN_L + 8; cy_t = y - 12
@@ -405,16 +436,19 @@ def generate_report(data, output_path="Weekly_Progress_Report.pdf"):
         else:
             c.setFont("Helvetica", 7); c.setFillColor(BLACK)
             c.drawString(cx_t, cy_t, line)
-        cy_t -= 9
+        cy_t -= 8
     cy_t -= 2
-    c.setFont("Helvetica-Bold", 7.5); c.setFillColor(BLACK)
-    c.drawString(cx_t, cy_t, "Direct Contact for Immediate Issues:"); cy_t -= 10
-    c.setFont("Helvetica-Bold", 7)
-    c.drawString(cx_t, cy_t, f"{data['contact_name']} {data['contact_phone']} | ")
+    c.setFont("Helvetica-Bold", 7); c.setFillColor(BLACK)
+    label = "Direct Contact for Immediate Issues: "
+    c.drawString(cx_t, cy_t, label)
+    lw = c.stringWidth(label, "Helvetica-Bold", 7)
+    contact = f"{data['contact_name']} {data['contact_phone']} | "
+    c.drawString(cx_t + lw, cy_t, contact)
+    cw = c.stringWidth(contact, "Helvetica-Bold", 7)
     c.setFont("Helvetica", 7); c.setFillColor(BLUE_LINK)
-    c.drawString(cx_t + c.stringWidth(f"{data['contact_name']} {data['contact_phone']} | ", "Helvetica-Bold", 7), cy_t, data['contact_email'])
+    c.drawString(cx_t + lw + cw, cy_t, data['contact_email'])
 
-    cy_t -= 10
+    cy_t -= 22
     c.setFont("Helvetica-BoldOblique", 9); c.setFillColor(NAVY)
     c.drawCentredString(PAGE_W/2, cy_t, data['district'])
 
