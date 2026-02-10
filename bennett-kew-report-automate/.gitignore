@@ -1,0 +1,17 @@
+# Environment
+.env
+.venv/
+
+# Output artifacts (regenerated each run)
+output/*.pdf
+output/*.json
+output/*.txt
+output/debug/
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,68 @@
+{
+    "project_id": "project_name",
+    "project_name": "Project Full Name",
+    "project_subtitle": "Project Subtitle",
+
+    "static_data": {
+        "project_name": "Project Full Name",
+        "project_subtitle": "Project Subtitle",
+        "project_address": "123 Main St, City, CA XXXXX",
+        "architect": "Architect Firm Name",
+        "project_duration": "Start Month YYYY - End Month YYYY",
+        "prepared_by": "Your Name, Title",
+        "general_contractor": "GC Company Name",
+        "construction_manager": "CM Company Name",
+        "district": "District Name",
+        "project_description": "Full project description paragraph...",
+        "commitment_text": "Community promise text...",
+        "contact_name": "Contact Full Name, Title",
+        "contact_phone": "(XXX) XXX-XXXX",
+        "contact_email": "email@company.com"
+    },
+
+    "paths": {
+        "daily_reports_dir": "C:\\path\\to\\daily\\reports",
+        "photos_dir": "C:\\path\\to\\photos",
+        "schedules_dir": "C:\\path\\to\\schedules",
+        "minutes_dir": "C:\\path\\to\\meeting\\minutes",
+        "logos_dir": "C:\\path\\to\\logos",
+        "pdf_generator_dir": "C:\\Users\\Adam\\DEV\\projects\\fsi-weekly-report\\bennett-kew-report"
+    },
+
+    "constants": {
+        "substantial_completion_date": "YYYY-MM-DD",
+        "report_start_date": "YYYY-MM-DD",
+        "photos_per_report": 2,
+        "principal_name": "Principal Name",
+        "principal_email": "",
+        "school_start_date": "YYYY-MM-DD"
+    },
+
+    "file_patterns": {
+        "daily_report_template": "Daily_Report_-{mm}-{dd}-{yyyy}.pdf",
+        "schedule_glob": "3-Week Look Ahead - *.pdf",
+        "minutes_glob": "Meeting Minutes_*.pdf",
+        "photo_extensions": [".jpg", ".jpeg", ".png"]
+    },
+
+    "abbreviations": {
+        "building": "bldg",
+        "with": "w/",
+        "operations": "ops",
+        "geotechnical": "geotech",
+        "underground": "UG",
+        "Storm Water Pollution Prevention": "SWPMP",
+        "special education": "SPED",
+        "over-excavation": "over-ex"
+    },
+
+    "email_template": {
+        "subject": "Week #{report_number} Construction Update",
+        "signature_name": "Your Name",
+        "signature_title": "Title",
+        "signature_email": "email@company.com",
+        "signature_phone": "XXX-XXX-XXXX",
+        "signature_address": "Address",
+        "signature_website": "website.com"
+    }
+}
