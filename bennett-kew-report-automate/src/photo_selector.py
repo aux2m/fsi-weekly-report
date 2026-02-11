@@ -3,10 +3,12 @@ Photo Selector: Uses Anthropic Vision API to select best 2 photos and generate c
 """
 
 import os
+import io
 import json
 import base64
 from pathlib import Path
 from datetime import date
+from PIL import Image
 from anthropic import AsyncAnthropic
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
@@ -40,14 +42,17 @@ PHOTO_TOOLS = [{
 }]
 
 
-def _encode_image(path: str) -> tuple[str, str]:
-    """Read and base64-encode an image, return (data, media_type)."""
+def _encode_image(path: str, quality: int = 80) -> tuple[str, str]:
+    """Read, compress, and base64-encode an image. Returns (data, media_type)."""
     ext = os.path.splitext(path)[1].lower()
     media_types = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png'}
     media_type = media_types.get(ext, 'image/jpeg')
 
-    with open(path, 'rb') as f:
-        data = base64.standard_b64encode(f.read()).decode('utf-8')
+    img = Image.open(path)
+    buf = io.BytesIO()
+    fmt = 'PNG' if ext == '.png' else 'JPEG'
+    img.save(buf, format=fmt, quality=quality, optimize=True)
+    data = base64.standard_b64encode(buf.getvalue()).decode('utf-8')
     return data, media_type
 
 
@@ -67,8 +72,8 @@ async def select_photos(client: AsyncAnthropic,
             "mismatch_warning": "No candidate photos found for this week.",
         }
 
-    # Limit to 6 candidates max to manage API costs
-    candidates = candidate_photos[:6]
+    # Limit to 4 candidates max to manage API costs (we only pick 2)
+    candidates = candidate_photos[:4]
     system = (PROMPTS_DIR / "photo_selection_system.md").read_text(encoding="utf-8")
 
     # Build message with images and activities context

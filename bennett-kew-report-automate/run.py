@@ -5,7 +5,8 @@ Bennett-Kew Weekly Report Automation
 End-to-end pipeline: NAS inputs -> AI extraction -> PDF + email draft.
 
 Usage:
-  python run.py                                    # Normal Friday run
+  python run.py                                    # Normal Friday run (API backend)
+  python run.py --backend cli                      # Use Claude CLI (Max subscription)
   python run.py --date 2026-02-06 --report-num 22  # Specific week
   python run.py --config another_project           # Different project
   python run.py --skip-email --debug               # Dev mode
@@ -51,6 +52,8 @@ def main():
                         help="Extract and assemble but don't generate PDF")
     parser.add_argument("--debug", action="store_true",
                         help="Save intermediate outputs for debugging")
+    parser.add_argument("--backend", "-b", choices=["api", "cli"], default="api",
+                        help="AI backend: api (Anthropic API) or cli (Claude CLI)")
 
     args = parser.parse_args()
 
@@ -62,6 +65,7 @@ def main():
         skip_photos=args.skip_photos,
         dry_run=args.dry_run,
         debug=args.debug,
+        backend=args.backend,
     ))
 
     if result.get("error"):

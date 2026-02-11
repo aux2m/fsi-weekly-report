@@ -80,9 +80,11 @@ async def run_pipeline(config_name: str = "bennett_kew",
                        skip_email: bool = False,
                        skip_photos: bool = False,
                        dry_run: bool = False,
-                       debug: bool = False) -> dict:
+                       debug: bool = False,
+                       backend: str = "api") -> dict:
     """
     Main pipeline entry point.
+    backend: "api" (direct Anthropic API) or "cli" (Claude CLI subprocess)
     Returns dict with generated file paths and summary.
     """
     start_time = time.time()
@@ -98,6 +100,7 @@ async def run_pipeline(config_name: str = "bennett_kew",
         completion_date=constants.get("substantial_completion_date"),
     )
     _print_header(rw)
+    print(f"  Backend: {backend.upper()}")
 
     # ── Stage 1: File resolution ─────────────────────────────────────────
     print("\nStage 1: Resolving input files...")
@@ -126,27 +129,52 @@ async def run_pipeline(config_name: str = "bennett_kew",
         minutes_text = extract_meeting_minutes(files.minutes)
 
     # ── Stage 3: AI content extraction (parallel where possible) ─────────
-    print("\nStage 3: AI content extraction...")
-    client = AsyncAnthropic()
+    print(f"\nStage 3: AI content extraction ({backend.upper()})...")
 
-    # Run daily reports (sequential internally) + schedule + minutes in parallel
-    print("  Starting parallel AI agents...")
+    if backend == "cli":
+        from .cli_agents import (
+            process_daily_reports_cli,
+            process_schedule_cli, empty_schedule_cli,
+            process_minutes_cli, empty_minutes_cli,
+            select_photos_cli,
+            draft_email_cli,
+        )
+        print("  Starting parallel CLI agents...")
 
-    async def _get_schedule():
-        if schedule_text:
-            return await process_schedule(client, schedule_text, rw.report_week_str)
-        return empty_schedule()
+        async def _get_schedule():
+            if schedule_text:
+                return await process_schedule_cli(schedule_text, rw.report_week_str)
+            return empty_schedule_cli()
 
-    async def _get_minutes():
-        if minutes_text:
-            return await process_minutes(client, minutes_text)
-        return empty_minutes()
+        async def _get_minutes():
+            if minutes_text:
+                return await process_minutes_cli(minutes_text)
+            return empty_minutes_cli()
 
-    daily_result, schedule_result, minutes_result = await asyncio.gather(
-        process_daily_reports(client, daily_texts, rw.report_week_str),
-        _get_schedule(),
-        _get_minutes(),
-    )
+        daily_result, schedule_result, minutes_result = await asyncio.gather(
+            process_daily_reports_cli(daily_texts, rw.report_week_str),
+            _get_schedule(),
+            _get_minutes(),
+        )
+    else:
+        client = AsyncAnthropic()
+        print("  Starting parallel API agents...")
+
+        async def _get_schedule():
+            if schedule_text:
+                return await process_schedule(client, schedule_text, rw.report_week_str)
+            return empty_schedule()
+
+        async def _get_minutes():
+            if minutes_text:
+                return await process_minutes(client, minutes_text)
+            return empty_minutes()
+
+        daily_result, schedule_result, minutes_result = await asyncio.gather(
+            process_daily_reports(client, daily_texts, rw.report_week_str),
+            _get_schedule(),
+            _get_minutes(),
+        )
     print("  AI extraction complete.")
 
     if debug:
@@ -157,12 +185,17 @@ async def run_pipeline(config_name: str = "bennett_kew",
     # ── Stage 4: Photo selection ─────────────────────────────────────────
     photo_result = {"photos": [], "photo_captions": [], "photo_scores": [], "mismatch_warning": None}
     if not skip_photos and files.candidate_photos:
-        print("\nStage 4: Photo selection...")
+        print(f"\nStage 4: Photo selection ({backend.upper()})...")
         activities = daily_result.get("activities_completed", [])
-        photo_result = await select_photos(
-            client, files.candidate_photos, activities,
-            num_photos=config["constants"].get("photos_per_report", 2)
-        )
+        num_photos = config["constants"].get("photos_per_report", 2)
+        if backend == "cli":
+            photo_result = await select_photos_cli(
+                files.candidate_photos, activities, num_photos=num_photos
+            )
+        else:
+            photo_result = await select_photos(
+                client, files.candidate_photos, activities, num_photos=num_photos
+            )
         if photo_result.get("mismatch_warning"):
             print(f"  PHOTO WARNING: {photo_result['mismatch_warning']}")
         else:
@@ -203,8 +236,11 @@ async def run_pipeline(config_name: str = "bennett_kew",
     # ── Stage 7: Email draft ─────────────────────────────────────────────
     email_path = None
     if not skip_email:
-        print("\nStage 7: Drafting principal email...")
-        email_result = await draft_email(client, report_data, config)
+        print(f"\nStage 7: Drafting principal email ({backend.upper()})...")
+        if backend == "cli":
+            email_result = await draft_email_cli(report_data, config)
+        else:
+            email_result = await draft_email(client, report_data, config)
         email_path = output_dir / f"principal_email_{rw.report_number:02d}.txt"
         with open(email_path, "w", encoding="utf-8") as f:
             f.write(f"Subject: {email_result['subject']}\n\n")
