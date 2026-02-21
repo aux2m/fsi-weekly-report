@@ -91,7 +91,7 @@ def parse_schedule_date(filename: str) -> date:
 
 
 def resolve_schedule(sched_dir: str, rw: ReportWeek) -> str:
-    """Find the most recent 3-week look-ahead on or before report Friday."""
+    """Find the latest 3-week look-ahead schedule in the folder."""
     if not os.path.isdir(sched_dir):
         return None
 
@@ -100,7 +100,7 @@ def resolve_schedule(sched_dir: str, rw: ReportWeek) -> str:
         if not f.lower().endswith('.pdf') or 'Look Ahead' not in f:
             continue
         d = parse_schedule_date(f)
-        if d and d <= rw.friday:
+        if d:
             candidates.append((d, os.path.join(sched_dir, f)))
 
     if candidates:

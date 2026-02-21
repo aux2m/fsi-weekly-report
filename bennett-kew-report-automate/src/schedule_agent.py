@@ -38,9 +38,28 @@ SCHEDULE_TOOLS = [{
 
 
 async def process_schedule(client: AsyncAnthropic, schedule_text: str,
-                           report_week_str: str) -> dict:
-    """Extract 3-week impact data from schedule text."""
+                           report_week_str: str,
+                           holidays: list[tuple] = None,
+                           master_schedule_context: str = None) -> dict:
+    """Extract 3-week impact data from schedule text + master schedule."""
     system = (PROMPTS_DIR / "schedule_extraction_system.md").read_text(encoding="utf-8")
+
+    # Build holiday context if any fall in the 3-week window
+    holiday_note = ""
+    if holidays:
+        holiday_lines = [f"  - {d.strftime('%m/%d')} ({d.strftime('%A')}): {name}"
+                         for d, name in holidays]
+        holiday_note = (
+            "\n\nUpcoming holidays/school calendar events in the 3-week window:\n"
+            + "\n".join(holiday_lines)
+            + "\nInclude relevant holidays in special_considerations "
+            "(e.g., no school impact on holiday, or adjusted work schedule)."
+        )
+
+    # Build master schedule section
+    master_note = ""
+    if master_schedule_context:
+        master_note = f"\n\n{master_schedule_context}"
 
     response = await client.messages.create(
         model="claude-haiku-4-5-20251001",
@@ -51,10 +70,13 @@ async def process_schedule(client: AsyncAnthropic, schedule_text: str,
         messages=[{
             "role": "user",
             "content": (
-                f"Extract the 3-week look-ahead data from this schedule. "
+                f"Extract the 3-week look-ahead data. "
                 f"The current report week is {report_week_str}. "
-                f"Week 1 should be the week AFTER the report week.\n\n"
-                f"Schedule text:\n{schedule_text}"
+                f"Remember: SIS Week 1 = current report week (skip it). "
+                f"YOUR Week 1 = the week AFTER {report_week_str}.\n\n"
+                f"SIS (Short Interval Schedule) text:\n{schedule_text}"
+                f"{holiday_note}"
+                f"{master_note}"
             )
         }],
     )

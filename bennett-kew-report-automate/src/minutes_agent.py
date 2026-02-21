@@ -30,7 +30,7 @@ async def process_minutes(client: AsyncAnthropic, minutes_text: str) -> dict:
     system = (PROMPTS_DIR / "minutes_extraction_system.md").read_text(encoding="utf-8")
 
     response = await client.messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-sonnet-4-5-20250929",
         max_tokens=1000,
         system=system,
         tools=MINUTES_TOOLS,

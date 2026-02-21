@@ -1,18 +1,32 @@
 @echo off
-REM Bennett-Kew Weekly Report - Scheduled Friday 8:00 AM
-REM Set up in Windows Task Scheduler:
-REM   Trigger: Weekly, Friday at 8:00 AM
-REM   Action: Start program -> this batch file
-REM   Conditions: Start only if network available
-
-cd /d C:\Users\Adam\DEV\projects\fsi-weekly-report\bennett-kew-report-automate
-
-REM Activate venv if exists, otherwise use system Python
-if exist .venv\Scripts\activate.bat (
-    call .venv\Scripts\activate.bat
-)
+REM ============================================================
+REM  Bennett-Kew Weekly Report - Scheduled Automation
+REM  Runs every Friday at 9:30 AM via Windows Task Scheduler
+REM  Backend: API (Anthropic API)
+REM ============================================================
 
 set PYTHONUTF8=1
-python run.py 2>&1 >> output\scheduler_log.txt
+set PROJECT_DIR=C:\Users\Adam\DEV\projects\fsi-weekly-report\bennett-kew-report-automate
+set LOG_DIR=%PROJECT_DIR%\output\logs
+set TIMESTAMP=%date:~10,4%%date:~4,2%%date:~7,2%_%time:~0,2%%time:~3,2%
+set TIMESTAMP=%TIMESTAMP: =0%
+set LOG_FILE=%LOG_DIR%\run_%TIMESTAMP%.log
 
-echo %DATE% %TIME% - Report generation complete >> output\scheduler_log.txt
+REM Create log directory if needed
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
+
+echo [%date% %time%] Starting weekly report generation >> "%LOG_FILE%"
+echo ================================================== >> "%LOG_FILE%"
+
+cd /d "%PROJECT_DIR%"
+
+C:\Python314\python.exe run.py --backend api >> "%LOG_FILE%" 2>&1
+
+if %ERRORLEVEL% EQU 0 (
+    echo [%date% %time%] SUCCESS - Report generated >> "%LOG_FILE%"
+) else (
+    echo [%date% %time%] FAILED - Exit code: %ERRORLEVEL% >> "%LOG_FILE%"
+)
+
+echo ================================================== >> "%LOG_FILE%"
+echo [%date% %time%] Done >> "%LOG_FILE%"

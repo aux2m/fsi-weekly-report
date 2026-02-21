@@ -58,7 +58,7 @@ async def extract_single_day(client: AsyncAnthropic, text: str, day_label: str) 
     """Extract data from one daily report. Sequential to manage tokens."""
     system = _load_prompt("daily_report_system.md")
     response = await client.messages.create(
-        model="claude-haiku-4-5-20251001",  # Haiku for extraction (Sonnet reserved for synthesis)
+        model="claude-haiku-4-5-20251001",
         max_tokens=1500,
         system=system,
         tools=EXTRACT_TOOLS,
@@ -91,7 +91,7 @@ async def synthesize_week(client: AsyncAnthropic, daily_extractions: list[dict],
         days_text += f"Coordination: {'; '.join(ext.get('coordination', []))}\n"
 
     response = await client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5-20250929",
         max_tokens=2000,
         system=system,
         tools=SYNTHESIS_TOOLS,

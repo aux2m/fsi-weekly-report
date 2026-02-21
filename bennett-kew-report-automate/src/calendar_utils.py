@@ -95,6 +95,32 @@ def weekday_dates(rw: ReportWeek) -> list[date]:
     return [rw.monday, rw.tuesday, rw.wednesday, rw.thursday, rw.friday]
 
 
+# School/federal holidays relevant to IUSD calendar (2025-2026 school year)
+KNOWN_HOLIDAYS = {
+    date(2025, 9, 1): "Labor Day",
+    date(2025, 11, 11): "Veterans Day",
+    date(2025, 11, 27): "Thanksgiving",
+    date(2025, 11, 28): "Thanksgiving break",
+    date(2025, 12, 22): "Winter break begins",
+    date(2026, 1, 5): "Winter break ends",
+    date(2026, 1, 19): "Martin Luther King Jr. Day",
+    date(2026, 2, 16): "Presidents' Day",
+    date(2026, 3, 30): "Spring break begins",
+    date(2026, 4, 3): "Spring break ends",
+    date(2026, 5, 25): "Memorial Day",
+    date(2026, 6, 11): "Last day of school",
+    date(2026, 7, 3): "Independence Day (observed)",
+}
+
+
+def upcoming_holidays(rw: ReportWeek, weeks_ahead: int = 3) -> list[tuple[date, str]]:
+    """Return holidays falling within the next N weeks after report Friday."""
+    start = rw.friday + timedelta(days=1)
+    end = start + timedelta(weeks=weeks_ahead)
+    return [(d, name) for d, name in sorted(KNOWN_HOLIDAYS.items())
+            if start <= d <= end]
+
+
 if __name__ == "__main__":
     rw = get_report_week("2026-02-06")
     print(f"Report Week: {rw.report_week_str}")

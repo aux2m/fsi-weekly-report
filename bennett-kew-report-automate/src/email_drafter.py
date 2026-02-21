@@ -1,6 +1,6 @@
 """
 Email Drafter: Generates principal email from report data.
-Uses Anthropic API (Haiku) for template-based generation.
+Uses Anthropic API (Opus) for premium-tone generation.
 NEVER sends email — saves to file for review.
 """
 
@@ -46,9 +46,8 @@ async def draft_email(client: AsyncAnthropic, report_data: dict,
         + f"\nCountdown: {report_data.get('countdown_days', 'N/A')} calendar days remaining"
     )
 
-    # For premium tone, switch back to: model="claude-opus-4-6"
     response = await client.messages.create(
-        model="claude-sonnet-4-5-20250929",
+        model="claude-opus-4-6",
         max_tokens=1000,
         system=system,
         tools=EMAIL_TOOLS,

@@ -16,7 +16,7 @@ async def call_claude(
     tools: str = None,
     allowed_tools: str = None,
     add_dir: str = None,
-    timeout: int = 120,
+    timeout: int = 300,
 ) -> dict | str:
     """
     Call Claude CLI in non-interactive mode.
@@ -29,7 +29,7 @@ async def call_claude(
         tools: Space-separated tool names (e.g. "Read")
         allowed_tools: Tools to auto-approve (e.g. "Read")
         add_dir: Additional directory to allow tool access to
-        timeout: Seconds before killing the process
+        timeout: Seconds before killing the process (default 300)
     Returns:
         Parsed JSON dict if json_schema provided, else raw text string.
     """
@@ -69,26 +69,58 @@ async def call_claude(
             if proc.returncode != 0:
                 err_msg = stderr.decode("utf-8", errors="replace").strip()
                 if attempt == 0:
-                    print(f"  CLI attempt {attempt+1} failed (exit {proc.returncode}): {err_msg[:200]}")
+                    print(f"  CLI attempt {attempt+1} failed (exit {proc.returncode}): {err_msg[:300]}")
                     continue
                 raise RuntimeError(f"claude CLI failed (exit {proc.returncode}): {err_msg[:500]}")
 
             output = stdout.decode("utf-8", errors="replace").strip()
-            envelope = json.loads(output)
-            result_text = envelope.get("result", "")
+            if not output:
+                err_msg = stderr.decode("utf-8", errors="replace").strip()
+                if attempt == 0:
+                    print(f"  CLI attempt {attempt+1}: empty stdout. stderr: {err_msg[:300]}")
+                    continue
+                raise RuntimeError(f"claude CLI returned empty output. stderr: {err_msg[:500]}")
 
+            envelope = json.loads(output)
+
+            # --json-schema puts structured data in "structured_output", not "result"
             if json_schema:
+                if "structured_output" in envelope and envelope["structured_output"]:
+                    return envelope["structured_output"]
+                # Fallback: try parsing result as JSON
+                result_text = envelope.get("result", "")
                 return json.loads(result_text)
-            return result_text
+
+            return envelope.get("result", "")
 
         except asyncio.TimeoutError:
+            # Capture stderr for debugging before killing
+            err_info = ""
+            try:
+                proc.kill()
+                _, stderr_data = await asyncio.wait_for(proc.communicate(), timeout=5)
+                err_info = stderr_data.decode("utf-8", errors="replace").strip()[:300]
+            except Exception:
+                pass
+
             if attempt == 0:
-                print(f"  CLI attempt {attempt+1} timed out after {timeout}s, retrying...")
-                try:
-                    proc.kill()
-                except Exception:
-                    pass
+                msg = f"  CLI attempt {attempt+1} timed out after {timeout}s, retrying..."
+                if err_info:
+                    msg += f"\n  [stderr] {err_info}"
+                print(msg)
                 continue
-            raise TimeoutError(f"claude CLI timed out after {timeout}s (2 attempts)")
+            raise TimeoutError(
+                f"claude CLI timed out after {timeout}s (2 attempts)"
+                + (f"\n  stderr: {err_info}" if err_info else "")
+            )
+
+        except json.JSONDecodeError as e:
+            raw = output[:300] if 'output' in dir() else ""
+            if attempt == 0:
+                print(f"  CLI attempt {attempt+1}: JSON parse error: {e}")
+                if raw:
+                    print(f"  [raw output] {raw}")
+                continue
+            raise RuntimeError(f"claude CLI returned invalid JSON: {e}\nRaw: {raw[:500]}")
 
     raise RuntimeError("claude CLI failed after 2 attempts")

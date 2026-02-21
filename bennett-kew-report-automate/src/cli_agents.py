@@ -154,7 +154,6 @@ async def _synthesize_week_cli(daily_extractions: list[dict],
             system_prompt=system,
             model="sonnet",
             json_schema=WEEKLY_SYNTHESIS_SCHEMA,
-            timeout=180,
         )
     except Exception as e:
         print(f"  CLI synthesis failed: {e}")
@@ -283,7 +282,7 @@ async def select_photos_cli(candidate_photos: list, activities_completed: list[s
             tools="Read",
             allowed_tools="Read",
             add_dir=photo_dir,
-            timeout=180,
+            timeout=600,
         )
         scores = result.get("scores", [])
     except Exception as e:

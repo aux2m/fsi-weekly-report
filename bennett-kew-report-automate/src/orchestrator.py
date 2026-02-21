@@ -11,7 +11,7 @@ import asyncio
 from pathlib import Path
 from anthropic import AsyncAnthropic
 
-from .calendar_utils import get_report_week, ReportWeek
+from .calendar_utils import get_report_week, ReportWeek, upcoming_holidays
 from .file_resolver import resolve_all_files, ResolvedFiles
 from .pdf_extractor import extract_daily_report, extract_schedule_table, extract_meeting_minutes
 from .daily_report_agent import process_daily_reports
@@ -20,6 +20,8 @@ from .minutes_agent import process_minutes, empty_minutes
 from .photo_selector import select_photos
 from .json_assembler import assemble_json
 from .email_drafter import draft_email
+from .critical_items_agent import assess_critical_items
+from .xer_parser import format_master_schedule_context
 
 PROJECT_ROOT = Path(__file__).parent.parent
 PDF_GENERATOR_DIR = None  # Set from config
@@ -79,6 +81,7 @@ async def run_pipeline(config_name: str = "bennett_kew",
                        report_number: int = None,
                        skip_email: bool = False,
                        skip_photos: bool = False,
+                       skip_outlook: bool = False,
                        dry_run: bool = False,
                        debug: bool = False,
                        backend: str = "api") -> dict:
@@ -160,9 +163,23 @@ async def run_pipeline(config_name: str = "bennett_kew",
         client = AsyncAnthropic()
         print("  Starting parallel API agents...")
 
+        holidays = upcoming_holidays(rw)
+
+        # Generate master schedule context from XER (for Week 3 gap-fill)
+        master_ctx = None
+        xer_path = config["paths"].get("master_schedule_xer")
+        if xer_path:
+            from datetime import timedelta
+            week1_monday = rw.friday + timedelta(days=3)  # Monday after report Friday
+            master_ctx = format_master_schedule_context(xer_path, week1_monday, num_weeks=3)
+            if master_ctx:
+                print(f"  Master schedule loaded for gap-fill")
+
         async def _get_schedule():
             if schedule_text:
-                return await process_schedule(client, schedule_text, rw.report_week_str)
+                return await process_schedule(client, schedule_text, rw.report_week_str,
+                                              holidays=holidays,
+                                              master_schedule_context=master_ctx)
             return empty_schedule()
 
         async def _get_minutes():
@@ -204,10 +221,48 @@ async def run_pipeline(config_name: str = "bennett_kew",
     else:
         print("\nStage 4: Skipping photo selection")
 
+    # ── Stage 4b: Critical items assessment ───────────────────────────────
+    critical_items = []
+    if backend == "api":
+        print(f"\nStage 4b: Critical items assessment (API)...")
+
+        # Check weather forecast for conflicts with planned work
+        weather_context = None
+        weather_cfg = config.get("weather", {})
+        if weather_cfg.get("enabled", True):
+            from .weather import get_forecast, check_weather_conflicts
+            lat = weather_cfg.get("latitude", 33.9617)
+            lon = weather_cfg.get("longitude", -118.3531)
+            print(f"  Checking weather for {weather_cfg.get('location_name', 'project site')}...")
+            forecast = get_forecast(lat, lon)
+            if forecast:
+                all_planned = (
+                    schedule_result.get("planned_activities", []) +
+                    schedule_result.get("week1_activities", []) +
+                    schedule_result.get("week2_activities", [])
+                )
+                weather_context = check_weather_conflicts(forecast, all_planned)
+                if weather_context:
+                    print(f"  Weather conflict detected")
+                else:
+                    print(f"  No weather conflicts")
+
+        critical_items = await assess_critical_items(
+            client, daily_result, schedule_result, minutes_result,
+            rw.report_week_str,
+            weather_context=weather_context,
+        )
+        if critical_items:
+            for ci in critical_items:
+                print(f"  ! {ci}")
+        else:
+            print("  No critical items this week")
+
     # ── Stage 5: JSON assembly ───────────────────────────────────────────
     print("\nStage 5: Assembling report data...")
     report_data = assemble_json(config, rw, daily_result, schedule_result,
-                                minutes_result, photo_result)
+                                minutes_result, photo_result,
+                                critical_items=critical_items)
 
     output_dir = PROJECT_ROOT / "output"
     output_dir.mkdir(exist_ok=True)
@@ -233,6 +288,17 @@ async def run_pipeline(config_name: str = "bennett_kew",
     pdf_path = _generate_pdf(config, report_data, rw, output_dir)
     print(f"  Generated: {os.path.basename(pdf_path)}")
 
+    # Copy to NAS archive location
+    nas_reports_dir = config["paths"].get("weekly_reports_dir")
+    nas_pdf_path = None
+    if nas_reports_dir and os.path.isdir(nas_reports_dir):
+        nas_name = f"Bennett-Kew Weekly Progress Report {rw.friday.strftime('%Y.%m.%d')}.pdf"
+        nas_pdf_path = os.path.join(nas_reports_dir, nas_name)
+        shutil.copy2(pdf_path, nas_pdf_path)
+        print(f"  Copied to: {nas_pdf_path}")
+    elif nas_reports_dir:
+        print(f"  WARNING: NAS reports dir not found: {nas_reports_dir}")
+
     # ── Stage 7: Email draft ─────────────────────────────────────────────
     email_path = None
     if not skip_email:
@@ -249,7 +315,36 @@ async def run_pipeline(config_name: str = "bennett_kew",
     else:
         print("\nStage 7: Skipping email draft")
 
-    # ── Stage 8: Summary ─────────────────────────────────────────────────
+    # ── Stage 8: Outlook draft ──────────────────────────────────────────
+    outlook_draft = None
+    outlook_config = config.get("outlook", {})
+    if (not skip_email and not dry_run and not skip_outlook
+            and outlook_config.get("enabled")):
+        print("\nStage 8: Creating Outlook draft...")
+        try:
+            from .outlook_drafter import create_outlook_draft
+            outlook_draft = await create_outlook_draft(
+                subject=email_result["subject"],
+                body_text=email_result["body"],
+                pdf_path=pdf_path,
+                config=config,
+            )
+            if outlook_draft.get("error"):
+                print(f"  WARNING: {outlook_draft['error']}")
+            else:
+                print(f"  Draft created in Outlook Drafts folder")
+                if outlook_draft.get("web_link"):
+                    print(f"  Link: {outlook_draft['web_link']}")
+        except Exception as e:
+            print(f"  WARNING: Outlook draft failed: {e}")
+            if email_path:
+                print(f"  (Email text file still saved at {email_path.name})")
+    elif not skip_email and not dry_run and not skip_outlook:
+        pass  # outlook not enabled in config, skip silently
+    else:
+        print("\nStage 8: Skipping Outlook draft")
+
+    # ── Stage 9: Summary ─────────────────────────────────────────────────
     elapsed = time.time() - start_time
     print("\n" + "=" * 56)
     print(f"  REPORT GENERATION COMPLETE")
@@ -257,6 +352,8 @@ async def run_pipeline(config_name: str = "bennett_kew",
     print("=" * 56)
     print(f"\nGenerated files:")
     print(f"  PDF:   {pdf_path}")
+    if nas_pdf_path:
+        print(f"  NAS:   {nas_pdf_path}")
     print(f"  Data:  {json_path}")
     if email_path:
         print(f"  Email: {email_path}")

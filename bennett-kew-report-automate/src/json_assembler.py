@@ -25,7 +25,8 @@ def apply_abbreviations_to_list(items: list[str], abbreviations: dict) -> list[s
 
 def assemble_json(config: dict, rw: ReportWeek,
                   daily_result: dict, schedule_result: dict,
-                  minutes_result: dict, photo_result: dict) -> dict:
+                  minutes_result: dict, photo_result: dict,
+                  critical_items: list[str] = None) -> dict:
     """
     Merge all pipeline outputs into the final data dict.
     Returns the flat dict that generate_report.py expects.
@@ -51,16 +52,13 @@ def assemble_json(config: dict, rw: ReportWeek,
     activities = daily_result.get("activities_completed", [])
     data["activities_completed"] = apply_abbreviations_to_list(activities, abbrevs)
 
+    # Milestones from daily synthesis only (minutes recaps are unreliable)
     milestones = daily_result.get("milestones_achieved", [])
-    # Merge milestones from minutes
-    minutes_milestones = minutes_result.get("milestones_mentioned", [])
-    all_milestones = _deduplicate(milestones + minutes_milestones)
-    data["milestones_achieved"] = apply_abbreviations_to_list(all_milestones, abbrevs)
+    data["milestones_achieved"] = apply_abbreviations_to_list(milestones, abbrevs)
 
-    critical = daily_result.get("critical_items", [])
-    minutes_critical = minutes_result.get("critical_items", [])
-    all_critical = _deduplicate(critical + minutes_critical)
-    data["critical_items"] = apply_abbreviations_to_list(all_critical, abbrevs)
+    # Critical items from dedicated agent (not from sub-agent extractions)
+    ci = critical_items if critical_items is not None else []
+    data["critical_items"] = apply_abbreviations_to_list(ci, abbrevs)
 
     # Schedule data
     for key in ["week1_dates", "week1_level", "week1_activities",

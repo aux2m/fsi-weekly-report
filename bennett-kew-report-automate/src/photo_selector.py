@@ -103,7 +103,7 @@ async def select_photos(client: AsyncAnthropic,
             print(f"  Warning: Could not load photo {path}: {e}")
 
     response = await client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5-20250929",
         max_tokens=2000,
         system=system,
         tools=PHOTO_TOOLS,

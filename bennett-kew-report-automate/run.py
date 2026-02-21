@@ -48,6 +48,8 @@ def main():
                         help="Don't generate principal email")
     parser.add_argument("--skip-photos", action="store_true",
                         help="Skip AI photo selection")
+    parser.add_argument("--skip-outlook", action="store_true",
+                        help="Skip Outlook draft creation")
     parser.add_argument("--dry-run", action="store_true",
                         help="Extract and assemble but don't generate PDF")
     parser.add_argument("--debug", action="store_true",
@@ -63,6 +65,7 @@ def main():
         report_number=args.report_num,
         skip_email=args.skip_email,
         skip_photos=args.skip_photos,
+        skip_outlook=args.skip_outlook,
         dry_run=args.dry_run,
         debug=args.debug,
         backend=args.backend,

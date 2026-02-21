@@ -21,12 +21,14 @@
     },
 
     "paths": {
-        "daily_reports_dir": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\_Bennett-Kew\\03-124773_Building N\\12 Gen Corresp and Misc\\Daily Reports",
-        "photos_dir": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\_Bennett-Kew\\03-124773_Building N\\18 Photos",
-        "schedules_dir": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\_Bennett-Kew\\03-124773_Building N\\13 Schedules\\SIS",
-        "minutes_dir": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\_Bennett-Kew\\03-124773_Building N\\14 Meetings\\Weekly OAC Coordination Meeting_Minutes",
+        "daily_reports_dir": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\Bennett-Kew P-8 Academy\\03-124773_Building N\\12 Gen Corresp and Misc\\Daily Reports",
+        "photos_dir": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\Bennett-Kew P-8 Academy\\03-124773_Building N\\18 Photos",
+        "schedules_dir": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\Bennett-Kew P-8 Academy\\03-124773_Building N\\13 Schedules\\SIS",
+        "minutes_dir": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\Bennett-Kew P-8 Academy\\03-124773_Building N\\14 Meetings\\Weekly OAC Coordination Meeting_Minutes",
         "logos_dir": "C:\\Users\\Adam\\DEV\\projects\\fsi-weekly-report\\bennett-kew-report\\assets\\logos",
-        "pdf_generator_dir": "C:\\Users\\Adam\\DEV\\projects\\fsi-weekly-report\\bennett-kew-report"
+        "pdf_generator_dir": "C:\\Users\\Adam\\DEV\\projects\\fsi-weekly-report\\bennett-kew-report",
+        "master_schedule_xer": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\Bennett-Kew P-8 Academy\\03-124773_Building N\\13 Schedules\\Accelerated Schedule\\December-2025-Acc-Schedule\\December 2025 Accelerated Schedule\\BKP8A-UP-2512-ACC-R0.xer",
+        "weekly_reports_dir": "C:\\Users\\Adam\\SynologyDrive\\SHARE\\Inglewood USD CURRENT\\Bennett-Kew P-8 Academy\\03-124773_Building N\\15 Management Reports\\Bennett-Kew Weekly Reports"
     },
 
     "constants": {
@@ -41,7 +43,7 @@
     "file_patterns": {
         "daily_report_template": "Bennett_Kew_Site_Improvements_-_Daily_Report_-{mm}-{dd}-{yyyy}.pdf",
         "schedule_glob": "BENNETT KEW SITE IMPROVEMENTS - 3-Week Look Ahead - *.pdf",
-        "minutes_glob": "IUSD_Bennett-Kew OAC Meeting Minutes_*.pdf",
+        "minutes_glob": "IUSDBennett-Kew P-8 Academy OAC Meeting Minutes_*.pdf",
         "photo_extensions": [".jpg", ".jpeg", ".png"]
     },
 
@@ -64,5 +66,23 @@
         "signature_phone": "661-204-1154",
         "signature_address": "25101 The Old Rd, #112\nSanta Clarita, CA 91381-2206",
         "signature_website": "fonder-salari.com"
+    },
+
+    "weather": {
+        "enabled": true,
+        "latitude": 33.9617,
+        "longitude": -118.3531,
+        "location_name": "Inglewood, CA"
+    },
+
+    "outlook": {
+        "enabled": true,
+        "signature_name": "Adam Wentworth 2023 (adam.wentworth@fonder-salari.com)",
+        "recipients_to": [
+            {"name": "Principal Appleton", "email": "TO_BE_FILLED"}
+        ],
+        "recipients_cc": [
+            {"name": "Adam Wentworth", "email": "adam.wentworth@fonder-salari.com"}
+        ]
     }
 }
